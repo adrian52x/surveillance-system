@@ -12,12 +12,15 @@ const ObjectDetection: React.FC = () => {
     const [isDetecting, setIsDetecting] = useState<boolean>(false);
     const [detectionCount, setDetectionCount] = useState<number>(0);
     const [lastDetections, setLastDetections] = useState<any[]>([]);
+    const [videoFps, setVideoFps] = useState<number>(0);
 
     const [model, setModel] = useState<CocoSSDModel | null>(null);
 
     const webcamRef = useRef<Webcam>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const { sendDetection, isConnected, userName } = useSocket();
+    const frameCountRef = useRef<number>(0);
+    const lastFpsUpdateRef = useRef<number>(Date.now());
+    const { sendDetection, sendVideoFrame, stopVideoStream, isConnected, userName } = useSocket();
 
     async function runCoco(): Promise<void> {
 
@@ -80,6 +83,37 @@ const ObjectDetection: React.FC = () => {
         }
     }
 
+    const captureAndSendVideoFrame = () => {
+        if (webcamRef.current?.video) {
+            const video = webcamRef.current.video;
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            if (tempCtx) {
+                // Reduce resolution for better performance while maintaining quality
+                const scaleFactor = 0.5; // 50% of original size
+                tempCanvas.width = video.videoWidth * scaleFactor;
+                tempCanvas.height = video.videoHeight * scaleFactor;
+                
+                // Draw current video frame to canvas with scaling
+                tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+                
+                // Convert to base64 with optimized quality/compression
+                const frameData = tempCanvas.toDataURL('image/jpeg', 0.6); // Reduced quality for better performance
+                sendVideoFrame(frameData);
+                
+                // Update FPS counter
+                frameCountRef.current++;
+                const now = Date.now();
+                if (now - lastFpsUpdateRef.current >= 1000) {
+                    setVideoFps(frameCountRef.current);
+                    frameCountRef.current = 0;
+                    lastFpsUpdateRef.current = now;
+                }
+            }
+        }
+    };
+
     const toggleDetection = () => {
         setIsDetecting(!isDetecting);
         if (!isDetecting) {
@@ -94,6 +128,8 @@ const ObjectDetection: React.FC = () => {
             }
             // Clear last detections
             setLastDetections([]);
+            // Stop video stream to notify admin dashboard
+            stopVideoStream();
         }
     };
 
@@ -116,20 +152,32 @@ const ObjectDetection: React.FC = () => {
         showmyVideo();
     }, []);
 
-    // Create/destroy interval when detection state or model changes
+    // Create/destroy intervals when detection state or model changes
     useEffect(() => {
-        let interval: NodeJS.Timeout | null = null;
+        let detectionInterval: NodeJS.Timeout | null = null;
+        let videoInterval: NodeJS.Timeout | null = null;
         
         if (model && isDetecting) {
-            interval = setInterval(() => {
+            // Object detection at lower frequency (more CPU intensive)
+            detectionInterval = setInterval(() => {
                 runObjectDetection(model);
-            }, 350);
+            }, 500); // 2 FPS for detection
+            
+            // Video streaming at higher frequency (smoother video)
+            videoInterval = setInterval(() => {
+                if (isConnected && webcamRef.current?.video) {
+                    captureAndSendVideoFrame();
+                }
+            }, 33); // ~20 FPS for video streaming
         }
         
         // Cleanup function
         return () => {
-            if (interval) {
-                clearInterval(interval);
+            if (detectionInterval) {
+                clearInterval(detectionInterval);
+            }
+            if (videoInterval) {
+                clearInterval(videoInterval);
             }
         };
     }, [model, isDetecting, isConnected]); // Safe dependencies
@@ -167,19 +215,26 @@ const ObjectDetection: React.FC = () => {
                         ? lastDetections.map(d => d.class).join(', ') 
                         : 'None'}
                     </div>
-                    <button
-                        onClick={toggleDetection}
-                        disabled={!isConnected}
-                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                        isDetecting
-                            ? 'bg-red-500 hover:bg-red-600 text-white'
-                            : isConnected
-                            ? 'bg-green-500 hover:bg-green-600 text-white'
-                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        }`}
-                    >
-                        {isDetecting ? '⏹️ Stop Broadcasting' : '▶️ Start Broadcasting'}
-                    </button>
+                    <div className="flex items-center space-x-4">
+                        {isDetecting && (
+                            <div className="text-sm text-blue-600 font-medium">
+                                📡 Video FPS: {videoFps}
+                            </div>
+                        )}
+                        <button
+                            onClick={toggleDetection}
+                            disabled={!isConnected}
+                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                            isDetecting
+                                ? 'bg-red-500 hover:bg-red-600 text-white'
+                                : isConnected
+                                ? 'bg-green-500 hover:bg-green-600 text-white'
+                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            }`}
+                        >
+                            {isDetecting ? '⏹️ Stop Broadcasting' : '▶️ Start Broadcasting'}
+                        </button>
+                    </div>
                 </div>
             </div>
 

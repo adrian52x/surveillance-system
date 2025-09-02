@@ -10,7 +10,7 @@ import {
 } from 'react';
 
 import { io as ClientIO, Socket } from 'socket.io-client';
-import { User, Detection, SocketContextType, SOCKET_CONFIG } from '@/types/socket.types';
+import { User, Detection, VideoFrame, SocketContextType, SOCKET_CONFIG } from '@/types/socket.types';
 
 // Create Socket Context with default values
 const SocketContext = createContext<SocketContextType>({
@@ -20,8 +20,12 @@ const SocketContext = createContext<SocketContextType>({
     userName: null,
     users: [],
     recentDetections: [],
+    videoFrames: new Map(),
     joinSession: () => {},
-    sendDetection: () => {}
+    sendDetection: () => {},
+    sendVideoFrame: () => {},
+    stopVideoStream: () => {},
+    requestUsersList: () => {}
 });
 
 export const SocketProvider = ({ children }: { children: ReactNode }) => {
@@ -40,6 +44,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     // Global app state
     const [users, setUsers] = useState<User[]>([]);
     const [recentDetections, setRecentDetections] = useState<Detection[]>([]);
+    const [videoFrames, setVideoFrames] = useState<Map<string, VideoFrame>>(new Map());
 
     // ============================================================================
     // SOCKET CONNECTION SETUP
@@ -108,6 +113,30 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
             setRecentDetections(prev => [detection, ...prev.slice(0, 49)]);
         };
 
+        // Video Frame Event Handlers
+        // Triggered by: socket.broadcast.emit('video-frame') - for admin sessions
+        const handleVideoFrame = (frameData: VideoFrame) => {
+            console.log('📹 Video frame from:', frameData.userName);
+            setVideoFrames(prev => {
+                const newMap = new Map(prev);
+                newMap.set(frameData.userId, {
+                    ...frameData,
+                    lastUpdate: new Date()
+                });
+                return newMap;
+            });
+        };
+
+        // Stop Video Stream Event Handler
+        const handleStopVideoStream = (data: { userId: string; userName: string }) => {
+            console.log('⏹️ Video stream stopped from:', data.userName);
+            setVideoFrames(prev => {
+                const newMap = new Map(prev);
+                newMap.delete(data.userId);
+                return newMap;
+            });
+        };
+
         // Register Connection Events
         socketInstance.on('connect', handleConnect);
         socketInstance.on('disconnect', handleDisconnect);
@@ -131,6 +160,11 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         // Backend: socket.broadcast.emit('new-detection') - sent to all OTHER sessions (not current)
         socketInstance.on('new-detection', handleNewDetection);
 
+        // Register Video Frame Events
+        // Backend: socket.broadcast.emit('video-frame') - sent to admin sessions
+        socketInstance.on('video-frame', handleVideoFrame);
+        socketInstance.on('stop-video-stream', handleStopVideoStream);
+
         setSocket(socketInstance);
 
         // Cleanup function
@@ -146,6 +180,8 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
             socketInstance.off('user-joined', handleUserJoined);
             socketInstance.off('user-left', handleUserLeft);
             socketInstance.off('new-detection', handleNewDetection);
+            socketInstance.off('video-frame', handleVideoFrame);
+            socketInstance.off('stop-video-stream', handleStopVideoStream);
             
             socketInstance.disconnect();
         };
@@ -176,6 +212,40 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [socket, isConnected]);
 
+    const sendVideoFrame = useCallback((frameData: string) => {
+        if (socket && isConnected && userName) {
+            socket.emit('video-frame', {
+                userId,
+                userName,
+                frameData,
+                timestamp: new Date().toISOString()
+            });
+        } else {
+            console.warn('⚠️ Cannot send video frame: not connected or no username');
+        }
+    }, [socket, isConnected, userId, userName]);
+
+    const stopVideoStream = useCallback(() => {
+        if (socket && isConnected && userId && userName) {
+            socket.emit('stop-video-stream', {
+                userId,
+                userName
+            });
+            console.log('⏹️ Stopping video stream');
+        } else {
+            console.warn('⚠️ Cannot stop video stream: not connected or no user info');
+        }
+    }, [socket, isConnected, userId, userName]);
+
+    const requestUsersList = useCallback(() => {
+        if (socket && isConnected) {
+            socket.emit('request-users-list');
+            console.log('📋 Requesting users list for admin dashboard');
+        } else {
+            console.warn('⚠️ Cannot request users list: not connected');
+        }
+    }, [socket, isConnected]);
+
     // ============================================================================
     // CONTEXT VALUE
     // ============================================================================
@@ -187,8 +257,12 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         userName,
         users,
         recentDetections,
+        videoFrames,
         joinSession,
-        sendDetection
+        sendDetection,
+        sendVideoFrame,
+        stopVideoStream,
+        requestUsersList
     };
 
     return (

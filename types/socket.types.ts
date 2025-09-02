@@ -18,6 +18,14 @@ export interface Detection {
   timestamp: string;
 }
 
+export interface VideoFrame {
+  userId: string;
+  userName: string;
+  frameData: string; // base64 image data
+  timestamp: string;
+  lastUpdate?: Date;
+}
+
 export interface SocketContextType {
   // Connection state
   socket: Socket | null;
@@ -30,6 +38,7 @@ export interface SocketContextType {
   // Global app state
   users: User[];
   recentDetections: Detection[];
+  videoFrames: Map<string, VideoFrame>;
   
   // Actions
   joinSession: (name: string) => void;
@@ -38,6 +47,9 @@ export interface SocketContextType {
     confidence: number;
     bbox: [number, number, number, number];
   }) => void;
+  sendVideoFrame: (frameData: string) => void;
+  stopVideoStream: () => void;
+  requestUsersList: () => void;
 }
 
 // Socket configuration
