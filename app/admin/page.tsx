@@ -11,7 +11,7 @@ const AdminDashboard: React.FC = () => {
         if (isConnected) {
             requestUsersList();
         }
-    }, [isConnected, requestUsersList]);
+    }, [isConnected]);
 
     return (
         <div className="min-h-screen bg-gray-900 p-10">
