@@ -68,31 +68,34 @@ const ConnectedUsers: React.FC = () => {
                     {recentDetections.map((detection) => (
                     <div key={detection.id} className="p-3 border border-gray-200 rounded-lg">
                         <div className="flex justify-between items-start mb-2">
-                        <div className="flex items-center">
-                            <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
-                            {detection.userName.charAt(0).toUpperCase()}
+                            <div className="flex items-center">
+                                <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                                    {detection.userName.charAt(0).toUpperCase()}
+                                </div>
+                                <span className="ml-2 font-medium text-gray-800 text-sm">
+                                    {detection.userName}
+                                </span>
                             </div>
-                            <span className="ml-2 font-medium text-gray-800 text-sm">
-                            {detection.userName}
+                            <span className="text-xs text-gray-500">
+                                {formatTime(detection.timestampInitial)} - {formatTime(detection.timestampFinal)}
                             </span>
-                        </div>
-                        <span className="text-xs text-gray-500">
-                            {formatTime(detection.timestamp)}
-                        </span>
                         </div>
                         
                         <div className="flex justify-between items-center">
-                        <span className="font-semibold text-gray-800">
-                            {detection.objectClass}
-                        </span>
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${getConfidenceColor(detection.confidence)}`}>
-                            {(detection.confidence * 100).toFixed(1)}%
-                        </span>
+                            <span className="font-semibold text-gray-800 flex items-center">
+                                <span className="px-2 py-0.5 rounded bg-red-100 text-red-700 mr-2">
+                                    {detection.objectClass}
+                                </span>
+                                <span className="text-gray-500 font-normal">confirmed</span>
+                            </span>
+                            {/* <span className={`px-2 py-1 rounded text-xs font-medium ${getConfidenceColor(detection.confidence)}`}>
+                                {(detection.confidence * 100).toFixed(1)}%
+                            </span> */}
                         </div>
                         
-                        <div className="text-xs text-gray-500 mt-1">
+                        {/* <div className="text-xs text-gray-500 mt-1">
                         Position: [{detection.bbox.map(b => Math.round(b)).join(', ')}]
-                        </div>
+                        </div> */}
                     </div>
                     ))}
                 </div>

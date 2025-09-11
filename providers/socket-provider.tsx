@@ -202,8 +202,8 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
     const sendDetection = useCallback((detection: {
         objectClass: string;
-        confidence: number;
-        bbox: [number, number, number, number];
+        // confidence: number;
+        // bbox: [number, number, number, number];
     }) => {
         if (socket && isConnected) {
             socket.emit('detection', detection);

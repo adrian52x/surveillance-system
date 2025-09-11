@@ -13,9 +13,10 @@ export interface Detection {
   userId: string;
   userName: string;
   objectClass: string;
-  confidence: number;
-  bbox: [number, number, number, number];
-  timestamp: string;
+  // confidence: number;
+  // bbox: [number, number, number, number];
+  timestampInitial: string;
+  timestampFinal: string;
 }
 
 export interface VideoFrame {
@@ -42,11 +43,7 @@ export interface SocketContextType {
   
   // Actions
   joinSession: (name: string) => void;
-  sendDetection: (detection: {
-    objectClass: string;
-    confidence: number;
-    bbox: [number, number, number, number];
-  }) => void;
+  sendDetection: (detection: Pick<Detection, 'objectClass'>) => void;
   sendVideoFrame: (frameData: string) => void;
   stopVideoStream: () => void;
   requestUsersList: () => void;

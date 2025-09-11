@@ -69,16 +69,22 @@ const ObjectDetection: React.FC = () => {
             // Update local state
             setLastDetections(detectedObjects);
 
-            // Send detections to backend if detecting and connected
+            // Send ONLY person detections to backend if detecting and connected
             if (isDetecting && isConnected && detectedObjects.length > 0) {
-                detectedObjects.forEach((detection) => {
-                    sendDetection({
-                        objectClass: detection.class,
-                        confidence: detection.score,
-                        bbox: detection.bbox as [number, number, number, number]
+                const personDetections = detectedObjects.filter(detection => 
+                    detection.class === 'person'
+                );
+                
+                if (personDetections.length > 0) {
+                    personDetections.forEach((detection) => {
+                        sendDetection({
+                            objectClass: detection.class,
+                            // confidence: detection.score,
+                            // bbox: detection.bbox as [number, number, number, number]
+                        });
                     });
-                });
-                setDetectionCount(prev => prev + detectedObjects.length);
+                    setDetectionCount(prev => prev + personDetections.length);
+                }
             }
         }
     }
