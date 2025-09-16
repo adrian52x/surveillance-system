@@ -8,12 +8,12 @@ const UserJoin: React.FC = () => {
     const { isConnected, joinSession } = useSocket();
 
     const generateRandomName = () => {
-        const adjectives = ['Smart', 'Quick', 'Bright', 'Cool', 'Fast', 'Sharp', 'Bold', 'Clever'];
-        const animals = ['Fox', 'Eagle', 'Tiger', 'Wolf', 'Bear', 'Lion', 'Hawk', 'Shark'];
-        const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
-        const randomAnimal = animals[Math.floor(Math.random() * animals.length)];
+        const cameraTypes = ['Cam', 'Lens', 'Focus', 'Zoom', 'Pixel', 'Frame'];
+        const descriptors = ['Pro', 'Max', 'Elite', 'Ultra', 'Prime'];
+        const randomCamera = cameraTypes[Math.floor(Math.random() * cameraTypes.length)];
+        const randomDescriptor = descriptors[Math.floor(Math.random() * descriptors.length)];
         const randomNumber = Math.floor(Math.random() * 100);
-        return `${randomAdjective}${randomAnimal}${randomNumber}`;
+        return `${randomCamera}${randomDescriptor}${randomNumber}`;
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -32,11 +32,8 @@ const UserJoin: React.FC = () => {
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
             <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
                 <h1 className="text-3xl font-bold text-center text-gray-800 mb-2">
-                Object Detection
+                AI-based Human Detection Surveillance System
                 </h1>
-                <p className="text-gray-600 text-center mb-6">
-                Enter your name to start detecting objects with AI
-                </p>
 
                 {/* Connection Status */}
                 <div className="mb-6 p-3 rounded-lg bg-gray-50">
@@ -81,13 +78,12 @@ const UserJoin: React.FC = () => {
                         : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     }`}
                 >
-                    {!isConnected ? 'Connecting...' : 'Start Detection Session'}
+                    {!isConnected ? 'Connecting...' : 'Start Session'}
                 </button>
                 </form>
 
                 <div className="mt-6 text-center text-sm text-gray-500">
                 <p>📹 Make sure your camera is ready</p>
-                <p>🤖 AI will detect objects in real-time</p>
                 </div>
             </div>
         </div>
