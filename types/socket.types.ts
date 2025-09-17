@@ -51,10 +51,10 @@ export interface SocketContextType {
 
 // Socket configuration
 export const SOCKET_CONFIG = {
-  url: process.env.NEXT_PUBLIC_SOCKET_URL || 
-       (typeof window !== 'undefined' ? 
-        `http://${window.location.hostname}:5000` : 
-        'http://localhost:5000'),
+  url:
+    process.env.NODE_ENV === 'production'
+      ? `https://${window.location.hostname}:5000`
+      : 'http://localhost:5000',
   options: {
     autoConnect: true,
     reconnection: true,
