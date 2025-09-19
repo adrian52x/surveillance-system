@@ -4,7 +4,33 @@ import { useEffect, useRef, useState } from 'react';
 import { useSocket } from '@/providers/socket-provider';
 
 const AdminDashboard: React.FC = () => {
-    const { isConnected, users, videoFrames, requestUsersList } = useSocket();
+    const { isConnected, users, videoFrames, requestUsersList, socket } = useSocket();
+    const [discordNotificationsEnabled, setDiscordNotificationsEnabled] = useState<boolean>(true);
+
+    // Function to toggle Discord notifications
+    const toggleDiscordNotifications = () => {
+        const newState = !discordNotificationsEnabled;
+        
+        // Send to backend
+        if (socket) {
+            socket.emit('toggle-discord-notifications', { enabled: newState });
+        }
+    };
+
+    // Listen for Discord toggle confirmation from backend
+    useEffect(() => {
+        if (socket) {
+            const handleDiscordToggled = (data: { enabled: boolean; message: string }) => {
+                setDiscordNotificationsEnabled(data.enabled);
+            };
+
+            socket.on('discord-notifications-toggled', handleDiscordToggled);
+
+            return () => {
+                socket.off('discord-notifications-toggled', handleDiscordToggled);
+            };
+        }
+    }, [socket]);
 
     // Request users list when admin dashboard loads and connects
     useEffect(() => {
@@ -14,15 +40,15 @@ const AdminDashboard: React.FC = () => {
     }, [isConnected]);
 
     return (
-        <div className="min-h-screen bg-gray-900 p-10">
+        <div className="min-h-screen bg-gray-900 p-4 sm:p-10">
             {/* Header */}
             <header className="mb-6">
-                <div className="flex justify-between items-center">
-                    <div>
-                        <h1 className="text-3xl font-bold text-white">Watch Center</h1>
-                        <p className="text-gray-400 mt-1">Live video feeds from all connected users</p>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
+                    <div className="w-full sm:w-auto">
+                        <h1 className="text-2xl sm:text-3xl font-bold text-white">Watch Center</h1>
+                        <p className="text-gray-400 mt-1 text-sm sm:text-base">Live video feeds from all connected users</p>
                     </div>
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-4 w-full sm:w-auto justify-start sm:justify-end">
                         <div className="flex items-center space-x-2">
                             <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
                             <span className="text-sm text-gray-300">
@@ -32,6 +58,17 @@ const AdminDashboard: React.FC = () => {
                         <div className="text-sm text-gray-300">
                             {users.length} Active Users
                         </div>
+                        <button
+                            onClick={toggleDiscordNotifications}
+                            className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                                discordNotificationsEnabled
+                                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                    : 'bg-gray-600 hover:bg-gray-700 text-gray-300'
+                            }`}
+                            title={`${discordNotificationsEnabled ? 'Disable' : 'Enable'} Discord notifications`}
+                        >
+                            🔔 Discord {discordNotificationsEnabled ? 'ON' : 'OFF'}
+                        </button>
                     </div>
                 </div>
             </header>
@@ -46,11 +83,14 @@ const AdminDashboard: React.FC = () => {
                         </div>
                     </div>
                 ) : (
-                    <div className={`grid gap-8 ${
-                        users.length === 1 ? 'grid-cols-3' :
-                        users.length <= 4 ? 'grid-cols-4' :
-                        users.length <= 9 ? 'grid-cols-3' :
-                        'grid-cols-4'
+                    <div className={`grid gap-4 ${
+                        users.length === 1 
+                            ? 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3' 
+                            : users.length <= 4 
+                            ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
+                            : users.length <= 9 
+                            ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' 
+                            : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
                     }`}>
                         {users.map((user) => {
                             const videoFrame = videoFrames.get(user.id);
@@ -119,7 +159,7 @@ const VideoFeedCard: React.FC<VideoFeedCardProps> = ({ user, videoFrame }) => {
             </div>
 
             {/* Video Feed Area */}
-            <div className="relative h-[20vw] bg-neutral-800">
+            <div className="relative aspect-video bg-neutral-800">
                 {videoFrame ? (
                     <canvas
                         ref={canvasRef}
