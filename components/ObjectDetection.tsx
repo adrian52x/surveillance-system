@@ -231,38 +231,29 @@ const ObjectDetection: React.FC = () => {
 
             {/* Control Panel */}
             <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
                         <div className="text-sm text-gray-700">
                             Current detections: {lastDetections.length > 0 
                             ? lastDetections.map(d => d.class).join(', ') 
                             : 'None'}
                         </div>
                         {isMobileDevice() && (
-                            <div className="text-sm text-gray-600">
+                            <div className="text-sm text-purple-600 font-medium">
                                 📹 {facingMode === 'user' ? 'Front Camera' : 'Back Camera'}
                             </div>
                         )}
                     </div>
-                    <div className="flex items-center space-x-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
                         {isDetecting && (
                             <div className="text-sm text-blue-600 font-medium">
                                 📡 Video FPS: {videoFps}
                             </div>
                         )}
-                        {!isMobileDevice() && (
-                            <button
-                                onClick={toggleCamera}
-                                className="px-3 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm font-medium transition-colors"
-                                title={`Switch to ${facingMode === 'user' ? 'back' : 'front'} camera`}
-                            >
-                                🔄 Switch Camera
-                            </button>
-                        )}
                         <button
                             onClick={toggleDetection}
                             disabled={!isConnected}
-                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                            className={`px-4 py-2 rounded-lg font-medium transition-colors w-full sm:w-auto ${
                             isDetecting
                                 ? 'bg-red-500 hover:bg-red-600 text-white'
                                 : isConnected
