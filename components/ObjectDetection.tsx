@@ -140,14 +140,19 @@ const ObjectDetection: React.FC = () => {
         }
     };
 
-    // Mobile device detection
-    const isMobileDevice = (): boolean => {
+    const toggleCamera = () => {
+        setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
+    };
+
+    const isMobileDevice = () => {
         return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     };
 
-    // Camera toggle function
-    const toggleCamera = (): void => {
-        setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
+    // Video constraints with dynamic facing mode
+    const videoConstraints = {
+        width: 1280,
+        height: 720,
+        facingMode: facingMode
     };
 
     const showmyVideo = (): void => {
@@ -199,24 +204,6 @@ const ObjectDetection: React.FC = () => {
         };
     }, [model, isDetecting, isConnected]); // Safe dependencies
 
-    // Video constraints with proper mobile camera handling
-    const getVideoConstraints = () => {
-        const baseConstraints = {
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-        };
-
-        // Add facingMode only if on mobile device
-        if (isMobileDevice()) {
-            return {
-                ...baseConstraints,
-                facingMode: { exact: facingMode }
-            };
-        }
-
-        return baseConstraints;
-    };
-
     return (
         <div className="bg-white rounded-lg shadow-lg p-6 h-full flex flex-col">
             {/* User Info Header */}
@@ -252,7 +239,7 @@ const ObjectDetection: React.FC = () => {
                             : 'None'}
                         </div>
                         {isMobileDevice() && (
-                            <div className="text-sm text-purple-600 font-medium">
+                            <div className="text-sm text-gray-600">
                                 📹 {facingMode === 'user' ? 'Front Camera' : 'Back Camera'}
                             </div>
                         )}
@@ -262,6 +249,15 @@ const ObjectDetection: React.FC = () => {
                             <div className="text-sm text-blue-600 font-medium">
                                 📡 Video FPS: {videoFps}
                             </div>
+                        )}
+                        {!isMobileDevice() && (
+                            <button
+                                onClick={toggleCamera}
+                                className="px-3 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+                                title={`Switch to ${facingMode === 'user' ? 'back' : 'front'} camera`}
+                            >
+                                🔄 Switch Camera
+                            </button>
                         )}
                         <button
                             onClick={toggleDetection}
@@ -295,8 +291,8 @@ const ObjectDetection: React.FC = () => {
                         ref={webcamRef}
                         className="rounded-lg w-full h-full object-cover"
                         muted
-                        videoConstraints={getVideoConstraints()}
-                        key={`webcam-${facingMode}`} // Force re-render when camera changes
+                        videoConstraints={videoConstraints}
+                        key={facingMode} // Force re-render when camera changes
                     />
                     <canvas
                         ref={canvasRef}
@@ -310,13 +306,12 @@ const ObjectDetection: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Camera Switch Button - Show only on mobile devices */}
+                    {/* Camera Switch Button - Show only on mobile */}
                     {isMobileDevice() && (
                         <button
                             onClick={toggleCamera}
-                            className="absolute top-4 right-4 bg-black bg-opacity-60 hover:bg-opacity-80 text-white p-3 rounded-full transition-all duration-300 shadow-lg text-lg"
+                            className="absolute top-4 right-4 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all duration-200"
                             title={`Switch to ${facingMode === 'user' ? 'back' : 'front'} camera`}
-                            aria-label={`Switch to ${facingMode === 'user' ? 'back' : 'front'} camera`}
                         >
                             🔄
                         </button>
